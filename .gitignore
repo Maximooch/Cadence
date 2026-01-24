@@ -1,0 +1,5 @@
+*.html
+!index-1.html
+*.jsx
+!scheduler-1.jsx
+errors_log/
