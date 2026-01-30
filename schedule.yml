@@ -1,0 +1,235 @@
+# Cadence Scheduler Configuration
+
+# Daily time window
+wake_time: 8.5   # 8:30am
+sleep_time: 23   # 11:00pm
+
+# Optional/parallel tasks (shown separately, not in main timeline)
+optional_tasks:
+  - id: "∞"
+    name: "Research & Backlog (parallel/optional)"
+    duration: 1
+    color: "#a855f7"
+
+# Day-specific task schedules
+# If a day is not listed, it falls back to default_tasks
+days:
+  monday:
+    tasks:
+      - id: -1
+        name: "Review"
+        duration: 0.5
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 3
+        color: "#7c3aed"
+      - id: 1
+        name: "Wrap up SipScout"
+        duration: 3
+        color: "#2563eb"
+      - id: 2
+        name: "Penguin Context"
+        duration: 0.75
+        color: "#0891b2"
+      - id: 3
+        name: "roadmap.md (Company + Penguin + Link)"
+        duration: 1
+        color: "#059669"
+      - id: 4
+        name: "features.md (Company + Penguin + Link)"
+        duration: 1
+        color: "#65a30d"
+      - id: 5
+        name: "Penguin Kanban Tracks"
+        duration: 1.5
+        color: "#ca8a04"
+      - id: 6
+        name: "Link brainstorming.md"
+        duration: 2
+        color: "#ea580c"
+      - id: 7
+        name: "FE/Stack Exploration"
+        duration: 0.5
+        color: "#dc2626"
+
+  tuesday:
+    tasks:
+      - id: -1
+        name: "Review"
+        duration: 0.5
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 3
+        color: "#7c3aed"
+      - id: 1
+        name: "SipScout Development"
+        duration: 4
+        color: "#2563eb"
+      - id: 2
+        name: "Penguin Agent Work"
+        duration: 2
+        color: "#0891b2"
+      - id: 3
+        name: "Link Documentation"
+        duration: 1.5
+        color: "#059669"
+      - id: 4
+        name: "Code Review"
+        duration: 1
+        color: "#65a30d"
+
+  wednesday:
+    tasks:
+      - id: -1
+        name: "Review"
+        duration: 0.5
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 3
+        color: "#7c3aed"
+      - id: 1
+        name: "SipScout Testing"
+        duration: 3
+        color: "#2563eb"
+      - id: 2
+        name: "Penguin Context"
+        duration: 1
+        color: "#0891b2"
+      - id: 3
+        name: "Company Planning"
+        duration: 2
+        color: "#059669"
+      - id: 4
+        name: "Deep Work Block"
+        duration: 2
+        color: "#ea580c"
+
+  thursday:
+    tasks:
+      - id: -1
+        name: "Review"
+        duration: 0.5
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 3
+        color: "#7c3aed"
+      - id: 1
+        name: "SipScout Features"
+        duration: 3
+        color: "#2563eb"
+      - id: 2
+        name: "Penguin Agent Refactoring"
+        duration: 1.5
+        color: "#0891b2"
+      - id: 3
+        name: "Link Architecture"
+        duration: 2
+        color: "#059669"
+      - id: 4
+        name: "Team Sync"
+        duration: 1
+        color: "#65a30d"
+
+  friday:
+    tasks:
+      - id: -1
+        name: "Review"
+        duration: 0.5
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 2
+        color: "#7c3aed"
+      - id: 1
+        name: "Weekly Goal Setting & Review"
+        duration: 2
+        color: "#ea580c"
+      - id: 2
+        name: "Roadmap Planning"
+        duration: 1.5
+        color: "#059669"
+      - id: 3
+        name: "Feature Prioritization"
+        duration: 1.5
+        color: "#65a30d"
+      - id: 4
+        name: "Penguin Agent Planning"
+        duration: 1
+        color: "#0891b2"
+      - id: 5
+        name: "SipScout Sprint Review"
+        duration: 1
+        color: "#2563eb"
+      - id: 6
+        name: "Admin & Cleanup"
+        duration: 1
+        color: "#6b7280"
+
+  saturday:
+    tasks:
+      - id: -1
+        name: "Review"
+        duration: 0.25
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 2
+        color: "#7c3aed"
+      - id: 1
+        name: "Weekly Review"
+        duration: 1
+        color: "#ea580c"
+      - id: 2
+        name: "Learning & Research"
+        duration: 2
+        color: "#0891b2"
+      - id: 3
+        name: "Personal Projects"
+        duration: 2
+        color: "#059669"
+
+  sunday:
+    tasks:
+      - id: -1
+        name: "Sabbath Rest"
+        duration: 0
+        color: "#6b7280"
+      - id: 0
+        name: "Holy Study (Orthodox + Bible)"
+        duration: 2
+        color: "#7c3aed"
+      - id: 1
+        name: "Family Time"
+        duration: 4
+        color: "#65a30d"
+      - id: 2
+        name: "Rest & Recovery"
+        duration: 6
+        color: "#059669"
+
+# Default tasks (fallback if day not specified above)
+default_tasks:
+  - id: -1
+    name: "Review"
+    duration: 0.5
+    color: "#6b7280"
+  - id: 0
+    name: "Holy Study (Orthodox + Bible)"
+    duration: 3
+    color: "#7c3aed"
+  - id: 1
+    name: "Deep Work Block 1"
+    duration: 3
+    color: "#2563eb"
+  - id: 2
+    name: "Deep Work Block 2"
+    duration: 3
+    color: "#0891b2"
+  - id: 3
+    name: "Admin & Planning"
+    duration: 1
+    color: "#059669"

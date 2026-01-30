@@ -3,28 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Scheduler</title>
+    <title>Cadence Scheduler</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-      const { useState, useEffect } = window.React;
+      const { useState, useEffect } = React;
 
-      const DEFAULT_TASKS = [
-        { id: 1, name: 'Holy Study (Orthodox + Bible)', duration: 3, color: '#7c3aed' },
-        { id: 2, name: 'Wrap up SipScout', duration: 3, color: '#2563eb' },
-        { id: 3, name: 'Penguin Context', duration: 0.75, color: '#0891b2' },
-        { id: 4, name: 'roadmap.md (Company + Penguin + Link)', duration: 1, color: '#059669' },
-        { id: 5, name: 'features.md (Company + Penguin + Link)', duration: 1, color: '#65a30d' },
-        { id: 6, name: 'Penguin Kanban Tracks', duration: 1.5, color: '#ca8a04' },
-        { id: 7, name: 'Link brainstorming.md', duration: 2, color: '#ea580c' },
-        { id: 8, name: 'FE/Stack Exploration', duration: 0.5, color: '#dc2626' },
-      ];
-
+      const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       const COLORS = ['#7c3aed', '#2563eb', '#0891b2', '#059669', '#65a30d', '#ca8a04', '#ea580c', '#dc2626', '#db2777', '#4f46e5'];
 
       const formatHour = (hour) => {
@@ -42,27 +33,79 @@
       };
 
       function SchedulerApp() {
-        const [tasks, setTasks] = useState(() => {
-          const saved = localStorage.getItem('scheduler-tasks');
-          return saved ? JSON.parse(saved) : DEFAULT_TASKS;
-        });
-        const [wakeTime, setWakeTime] = useState(() => {
-          const saved = localStorage.getItem('scheduler-wakeTime');
-          return saved ? parseFloat(saved) : 8.5;
-        });
-        const [sleepTime, setSleepTime] = useState(() => {
-          const saved = localStorage.getItem('scheduler-sleepTime');
-          return saved ? parseFloat(saved) : 23;
-        });
+        const [config, setConfig] = useState(null);
+        const [selectedDay, setSelectedDay] = useState('');
+        const [tasks, setTasks] = useState([]);
+        const [wakeTime, setWakeTime] = useState(8.5);
+        const [sleepTime, setSleepTime] = useState(23);
         const [editingTask, setEditingTask] = useState(null);
         const [showAddForm, setShowAddForm] = useState(false);
         const [newTask, setNewTask] = useState({ name: '', duration: 1, color: COLORS[0] });
         const [currentTime, setCurrentTime] = useState(new Date());
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
 
+        // Load YAML configuration
         useEffect(() => {
-          localStorage.setItem('scheduler-tasks', JSON.stringify(tasks));
-        }, [tasks]);
+          const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+          setSelectedDay(today);
 
+          fetch('schedule.yml')
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`Failed to load schedule.yml: ${response.status}`);
+              }
+              return response.text();
+            })
+            .then(yamlText => {
+              try {
+                const parsed = jsyaml.load(yamlText);
+                setConfig(parsed);
+                
+                // Load saved wake/sleep times from localStorage
+                const savedWakeTime = localStorage.getItem('scheduler-wakeTime');
+                const savedSleepTime = localStorage.getItem('scheduler-sleepTime');
+                if (savedWakeTime) setWakeTime(parseFloat(savedWakeTime));
+                if (savedSleepTime) setSleepTime(parseFloat(savedSleepTime));
+                else if (parsed.sleep_time) setSleepTime(parsed.sleep_time);
+                if (parsed.wake_time && !savedWakeTime) setWakeTime(parsed.wake_time);
+                
+                setLoading(false);
+              } catch (e) {
+                throw new Error(`Failed to parse YAML: ${e.message}`);
+              }
+            })
+            .catch(err => {
+              console.error('Error loading config:', err);
+              setError(err.message);
+              setLoading(false);
+            });
+        }, []);
+
+        // Load tasks when day changes
+        useEffect(() => {
+          if (!config) return;
+          
+          const dayConfig = config.days?.[selectedDay];
+          const yamlTasks = dayConfig?.tasks || config.default_tasks || [];
+          
+          // Try to load saved tasks for this day from localStorage
+          const savedTasks = localStorage.getItem(`scheduler-tasks-${selectedDay}`);
+          if (savedTasks) {
+            setTasks(JSON.parse(savedTasks));
+          } else {
+            setTasks(yamlTasks);
+          }
+        }, [config, selectedDay]);
+
+        // Save tasks to localStorage when they change
+        useEffect(() => {
+          if (tasks.length > 0) {
+            localStorage.setItem(`scheduler-tasks-${selectedDay}`, JSON.stringify(tasks));
+          }
+        }, [tasks, selectedDay]);
+
+        // Save wake/sleep times
         useEffect(() => {
           localStorage.setItem('scheduler-wakeTime', wakeTime);
         }, [wakeTime]);
@@ -71,10 +114,40 @@
           localStorage.setItem('scheduler-sleepTime', sleepTime);
         }, [sleepTime]);
 
+        // Update current time every minute
         useEffect(() => {
           const timer = setInterval(() => setCurrentTime(new Date()), 60000);
           return () => clearInterval(timer);
         }, []);
+
+        if (loading) {
+          return (
+            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p>Loading schedule configuration...</p>
+              </div>
+            </div>
+          );
+        }
+
+        if (error) {
+          return (
+            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-6">
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-6 max-w-lg">
+                <h2 className="text-xl font-bold text-red-400 mb-2">Error Loading Configuration</h2>
+                <p className="text-red-300">{error}</p>
+                <p className="text-gray-400 text-sm mt-4">
+                  Make sure schedule.yml exists in the same directory and is valid YAML.
+                </p>
+              </div>
+            </div>
+          );
+        }
+
+        if (!config) {
+          return null;
+        }
 
         // Handle next-day sleep times (midnight)
         const displaySleepTime = sleepTime < wakeTime ? sleepTime + 24 : sleepTime;
@@ -146,10 +219,11 @@
         };
 
         const resetToDefault = () => {
-          if (confirm('Reset to default schedule?')) {
-            setTasks(DEFAULT_TASKS);
-            setWakeTime(8.5);
-            setSleepTime(23);
+          if (confirm('Reset this day to default schedule?')) {
+            const dayConfig = config.days?.[selectedDay];
+            const yamlTasks = dayConfig?.tasks || config.default_tasks || [];
+            setTasks(yamlTasks);
+            localStorage.removeItem(`scheduler-tasks-${selectedDay}`);
           }
         };
 
@@ -160,12 +234,14 @@
         const wakePresets = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
         const sleepPresets = [21, 21.5, 22, 22.5, 23, 23.5, 0, 0.5];
 
+        const optionalTasks = config.optional_tasks || [];
+
         return (
           <div className="min-h-screen bg-gray-900 text-white p-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">Daily Scheduler</h1>
+                  <h1 className="text-3xl font-bold mb-2">Cadence Scheduler</h1>
                   <p className="text-gray-400">
                     {formatHour(wakeTime)} wake → {formatHour(sleepTime)} sleep • {adjustedTotalHours.toFixed(1)}hr available • {totalTaskTime.toFixed(1)}hr scheduled • {adjustedRemainingTime > 0 ? `${adjustedRemainingTime.toFixed(1)}hr buffer` : `${Math.abs(adjustedRemainingTime).toFixed(1)}h over`}
                   </p>
@@ -181,8 +257,36 @@
                     onClick={resetToDefault}
                     className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition"
                   >
-                    Reset
+                    Reset Day
                   </button>
+                </div>
+              </div>
+
+              {/* Day Selector */}
+              <div className="mb-6 bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <label className="text-sm text-gray-400 mb-2 block">Select Day:</label>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS_OF_WEEK.map((day) => {
+                    const hasCustomConfig = config.days?.[day];
+                    const isToday = day === new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDay(day)}
+                        className={`
+                          px-4 py-2 rounded-lg font-medium capitalize transition-all
+                          ${selectedDay === day 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }
+                        `}
+                      >
+                        {day}
+                        {isToday && ' (Today)'}
+                        {hasCustomConfig && selectedDay !== day && ' •'}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -428,6 +532,30 @@
                   </table>
                 </div>
               </div>
+
+              {/* Optional/Parallel Tasks */}
+              {optionalTasks.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold mb-3 text-gray-400">Optional / Parallel</h2>
+                  <div className="bg-gray-800/50 rounded-lg border border-gray-700 border-dashed p-4">
+                    {optionalTasks.map((task) => (
+                      <div key={task.id} className="flex items-center gap-3">
+                        <div 
+                          className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold opacity-70"
+                          style={{ backgroundColor: task.color }}
+                        >
+                          {task.id}
+                        </div>
+                        <span className="text-gray-400">{task.name}</span>
+                        <span className="text-gray-500 text-sm ml-auto">~{task.duration}h</span>
+                      </div>
+                    ))}
+                    <p className="text-xs text-gray-500 mt-3 italic">
+                      Can be done in parallel during breaks, waiting, or interleaved with other tasks
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
