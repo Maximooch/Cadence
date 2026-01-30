@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -45,7 +45,7 @@ days:
         name: "Weekly Review"
         duration: 2
         color: "#ea580c"
-      - id: 1
+      - id: 11
         name: "Planning"
         duration: 1
         color: "#65a30d"
@@ -93,10 +93,9 @@ function createWindow(show = true) {
 
 function createTray() {
   // Create tray icon - use nativeImage to create from text if no icon file
-  const { nativeImage } = require('electron');
   let trayIcon;
   
-  // Try to use icon file, fallback to text icon
+  // Try to use icon file, fallback to empty image
   const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
   if (fs.existsSync(iconPath)) {
     trayIcon = iconPath;
@@ -154,6 +153,14 @@ function createTray() {
         mainWindow.hide();
       } else {
         mainWindow.show();
+        mainWindow.focus();
+      }
+    } else {
+      createWindow();
+    }
+  });
+}
+
 // IPC handlers for file operations
 ipcMain.handle('get-schedule-path', () => {
   return schedulePath;
@@ -200,6 +207,17 @@ if (!gotTheLock) {
   app.on('second-instance', () => {
     if (mainWindow) {
       mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+// Handle before quit
+app.on('before-quit', () => {
+  isQuitting = true;
+});
+
+// macOS dock menu - set after app is ready
 app.whenReady().then(() => {
   if (process.platform === 'darwin') {
     app.dock.setMenu([
