@@ -1,10 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// Keep a global reference of the window object
+// Keep global references
 let mainWindow;
+let tray;
+let isQuitting = false;
 
 // Path to user data directory for storing schedule data
 const userDataPath = path.join(os.homedir(), 'Library', 'Application Support', 'Cadence');
@@ -39,7 +41,7 @@ default_tasks:
 days:
   friday:
     tasks:
-      - id: 0
+      - id: 10
         name: "Weekly Review"
         duration: 2
         color: "#ea580c"
@@ -52,7 +54,7 @@ days:
   console.log('Created default schedule at:', schedulePath);
 }
 
-function createWindow() {
+function createWindow(show = true) {
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -71,15 +73,87 @@ function createWindow() {
   // Load the app
   mainWindow.loadFile('index.html');
 
-  // Open DevTools in development
-  // mainWindow.webContents.openDevTools();
+  // Handle window close - hide instead of quit
+  mainWindow.on('close', function (event) {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
 
   // Handle window closed
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
+
+  if (!show) {
+    mainWindow.hide();
+  }
 }
 
+function createTray() {
+  // Create tray icon - use nativeImage to create from text if no icon file
+  const { nativeImage } = require('electron');
+  let trayIcon;
+  
+  // Try to use icon file, fallback to text icon
+  const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
+  if (fs.existsSync(iconPath)) {
+    trayIcon = iconPath;
+  } else {
+    // Create a 16x16 empty image as fallback
+    trayIcon = nativeImage.createEmpty();
+  }
+  
+  tray = new Tray(trayIcon);
+  
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show Cadence',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        } else {
+          createWindow();
+        }
+      }
+    },
+    {
+      label: 'Quick Add Task',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+          // Send IPC message to renderer to open add task form
+          mainWindow.webContents.send('quick-add-task');
+        } else {
+          createWindow();
+          setTimeout(() => {
+            mainWindow.webContents.send('quick-add-task');
+          }, 500);
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setToolTip('Cadence Scheduler');
+  tray.setContextMenu(contextMenu);
+  
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
 // IPC handlers for file operations
 ipcMain.handle('get-schedule-path', () => {
   return schedulePath;
@@ -104,7 +178,10 @@ ipcMain.handle('write-schedule', async (event, content) => {
 });
 
 // App event handlers
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  createTray();
+});
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
@@ -112,9 +189,17 @@ app.on('window-all-closed', function () {
 
 app.on('activate', function () {
   if (mainWindow === null) createWindow();
+  else mainWindow.show();
 });
 
-// macOS dock menu - set after app is ready
+// Prevent multiple instances
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      mainWindow.show();
 app.whenReady().then(() => {
   if (process.platform === 'darwin') {
     app.dock.setMenu([

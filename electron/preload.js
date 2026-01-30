@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, app } = require('electron');
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -9,6 +9,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Platform info
   platform: process.platform,
+  
+  // Listen for quick add task from menu bar
+  onQuickAddTask: (callback) => {
+    ipcRenderer.on('quick-add-task', callback);
+    return () => ipcRenderer.removeListener('quick-add-task', callback);
+  },
   
   // App info
   versions: {
