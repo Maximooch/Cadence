@@ -1,0 +1,279 @@
+const React = window.React;
+
+const tasks = [
+  { id: -1, name: 'Review', duration: 0.5, color: '#6b7280' },
+  { id: 0, name: 'Holy Study (Orthodox + Bible)', duration: 3, color: '#7c3aed' },
+  { id: 1, name: 'Wrap up SipScout', duration: 3, color: '#2563eb' },
+  { id: 2, name: 'Penguin Context', duration: 0.75, color: '#0891b2' },
+  { id: 3, name: 'roadmap.md (Company + Penguin + Link)', duration: 1, color: '#059669' },
+  { id: 4, name: 'features.md (Company + Penguin + Link)', duration: 1, color: '#65a30d' },
+  { id: 5, name: 'Penguin Kanban Tracks', duration: 1.5, color: '#ca8a04' },
+  { id: 6, name: 'Link brainstorming.md', duration: 2, color: '#ea580c' },
+  { id: 7, name: 'FE/Stack Exploration', duration: 0.5, color: '#dc2626' },
+];
+
+// Optional/parallel task - not in main timeline
+const optionalTasks = [
+  { id: '∞', name: 'Research & Backlog (parallel/optional)', duration: 1, color: '#a855f7' },
+];
+
+const formatHour = (hour) => {
+  const h = Math.floor(hour);
+  const m = Math.round((hour - h) * 60);
+  const period = h >= 12 ? 'pm' : 'am';
+  const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${displayHour}${period}` : `${displayHour}:${m.toString().padStart(2, '0')}${period}`;
+};
+
+const format24Hour = (hour) => {
+  const h = Math.floor(hour);
+  const m = Math.round((hour - h) * 60);
+  return m === 0 ? `${h.toString().padStart(2, '0')}00` : `${h.toString().padStart(2, '0')}${m.toString().padStart(2, '0')}`;
+};
+
+export default function SchedulerApp() {
+  const wakeTime = 8.5; // 8:30am
+  const sleepTime = 23; // 11pm
+  const totalHours = sleepTime - wakeTime; // 14.5 hours
+  
+  // Calculate scheduled blocks
+  const schedule = [];
+  let currentTime = wakeTime;
+  
+  tasks.forEach((task) => {
+    schedule.push({
+      ...task,
+      startTime: currentTime,
+      endTime: currentTime + task.duration,
+    });
+    currentTime += task.duration;
+  });
+  
+  const totalTaskTime = tasks.reduce((sum, t) => sum + t.duration, 0);
+  const remainingTime = totalHours - totalTaskTime;
+  
+  // Generate hour markers for the grid
+  const morningHours = [];
+  for (let h = 0; h <= 11; h++) {
+    morningHours.push(h);
+  }
+  
+  const afternoonHours = [];
+  for (let h = 12; h <= 23; h++) {
+    afternoonHours.push(h);
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">Daily Schedule</h1>
+        <p className="text-gray-400 mb-2">
+          {formatHour(wakeTime)} wake → {formatHour(sleepTime)} sleep • {totalHours}hr available • {totalTaskTime}hr scheduled • {remainingTime > 0 ? `${remainingTime.toFixed(1)}hr buffer` : `${Math.abs(remainingTime).toFixed(1)}h over`}
+        </p>
+        <p className="text-gray-500 text-sm mb-6 italic">
+          ⏱️ Pomodoro breaks (5-15m) taken organically between blocks — times are targets, not rigid
+        </p>
+        
+        {/* 24-Hour Clock Reference Grid */}
+        <div className="mb-8 bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="text-sm text-gray-400 mb-2 font-mono">MORNING (24-Hour)</div>
+          <div className="grid grid-cols-12 gap-px bg-gray-700 rounded overflow-hidden mb-1">
+            {morningHours.map((h) => (
+              <div 
+                key={h} 
+                className={`text-center py-2 text-xs font-mono ${h >= wakeTime && h < 12 ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-500'}`}
+              >
+                {format24Hour(h)}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-12 gap-px bg-gray-700 rounded overflow-hidden">
+            {morningHours.map((h) => (
+              <div 
+                key={h} 
+                className={`text-center py-2 text-xs ${h >= wakeTime && h < 12 ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-500'}`}
+              >
+                {formatHour(h)}
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-sm text-gray-400 mb-2 mt-4 font-mono">AFTERNOON (24-Hour)</div>
+          <div className="grid grid-cols-12 gap-px bg-gray-700 rounded overflow-hidden mb-1">
+            {afternoonHours.map((h) => (
+              <div 
+                key={h} 
+                className={`text-center py-2 text-xs font-mono ${h < sleepTime ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-500'}`}
+              >
+                {format24Hour(h)}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-12 gap-px bg-gray-700 rounded overflow-hidden">
+            {afternoonHours.map((h) => (
+              <div 
+                key={h} 
+                className={`text-center py-2 text-xs ${h < sleepTime ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-500'}`}
+              >
+                {formatHour(h)}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Visual Timeline */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-3">Timeline View</h2>
+          <div className="relative bg-gray-800 rounded-lg p-4 border border-gray-700">
+            {/* Hour markers */}
+            <div className="flex justify-between text-xs text-gray-500 mb-2 px-1">
+              {Array.from({ length: Math.ceil(totalHours) + 1 }, (_, i) => {
+                const hour = wakeTime + i;
+                return (
+                  <span key={i} className="w-0 text-center" style={{ marginLeft: i === 0 ? 0 : -10 }}>
+                    {formatHour(hour)}
+                  </span>
+                );
+              })}
+            </div>
+            
+            {/* Timeline bar */}
+            <div className="relative h-12 bg-gray-700 rounded overflow-hidden">
+              {schedule.map((block) => {
+                const leftPercent = ((block.startTime - wakeTime) / totalHours) * 100;
+                const widthPercent = (block.duration / totalHours) * 100;
+                return (
+                  <div
+                    key={block.id}
+                    className="absolute h-full flex items-center justify-center text-xs font-medium overflow-hidden"
+                    style={{
+                      left: `${leftPercent}%`,
+                      width: `${widthPercent}%`,
+                      backgroundColor: block.color,
+                    }}
+                    title={`${block.name}: ${formatHour(block.startTime)} - ${formatHour(block.endTime)}`}
+                  >
+                    <span className="truncate px-1">{block.id >= 0 ? block.id : '−1'}</span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Hour grid lines */}
+            <div className="absolute top-12 left-4 right-4 h-12 pointer-events-none">
+              {Array.from({ length: Math.ceil(totalHours) }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute top-0 h-full border-l border-gray-600 opacity-30"
+                  style={{ left: `${(i / totalHours) * 100}%` }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Detailed Schedule */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-3">Task Schedule</h2>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-750 border-b border-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">#</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Task</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Start</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">End</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedule.map((block, idx) => (
+                  <tr 
+                    key={block.id} 
+                    className={`border-b border-gray-700 ${idx % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}
+                  >
+                    <td className="py-3 px-4">
+                      <div 
+                        className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold"
+                        style={{ backgroundColor: block.color }}
+                      >
+                        {block.id}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 font-medium">{block.name}</td>
+                    <td className="py-3 px-4 font-mono text-sm text-gray-300">{formatHour(block.startTime)}</td>
+                    <td className="py-3 px-4 font-mono text-sm text-gray-300">{formatHour(block.endTime)}</td>
+                    <td className="py-3 px-4 text-sm text-gray-300">
+                      {block.duration >= 1 
+                        ? `${Math.floor(block.duration)}h ${block.duration % 1 ? Math.round((block.duration % 1) * 60) + 'm' : ''}`
+                        : `${Math.round(block.duration * 60)}m`
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        {/* Optional/Parallel Tasks */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-3 text-gray-400">Optional / Parallel</h2>
+          <div className="bg-gray-800/50 rounded-lg border border-gray-700 border-dashed p-4">
+            {optionalTasks.map((task) => (
+              <div key={task.id} className="flex items-center gap-3">
+                <div 
+                  className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold opacity-70"
+                  style={{ backgroundColor: task.color }}
+                >
+                  {task.id}
+                </div>
+                <span className="text-gray-400">{task.name}</span>
+                <span className="text-gray-500 text-sm ml-auto">~{task.duration}h</span>
+              </div>
+            ))}
+            <p className="text-xs text-gray-500 mt-3 italic">
+              Can be done in parallel during breaks, waiting, or interleaved with other tasks
+            </p>
+          </div>
+        </div>
+        
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-green-400">{totalHours}h</div>
+            <div className="text-sm text-gray-400">Available Time</div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-blue-400">{totalTaskTime}h</div>
+            <div className="text-sm text-gray-400">Scheduled</div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className={`text-2xl font-bold ${remainingTime >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+              {remainingTime >= 0 ? `${remainingTime.toFixed(1)}h` : `-${Math.abs(remainingTime).toFixed(1)}h`}
+            </div>
+            <div className="text-sm text-gray-400">{remainingTime >= 0 ? 'Buffer' : 'Over Budget'}</div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-purple-400">{tasks.length}</div>
+            <div className="text-sm text-gray-400">Tasks</div>
+          </div>
+        </div>
+        
+        {/* Warning if over budget */}
+        {remainingTime < 0 && (
+          <div className="mt-6 bg-red-900/30 border border-red-700 rounded-lg p-4">
+            <div className="font-semibold text-red-400">⚠️ Schedule Overrun</div>
+            <div className="text-sm text-red-300 mt-1">
+              You're {Math.abs(remainingTime).toFixed(1)} hours over your available time. 
+              End time would be {formatHour(schedule[schedule.length - 1]?.endTime || sleepTime)}.
+              Consider trimming tasks or extending your day.
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(SchedulerApp));
