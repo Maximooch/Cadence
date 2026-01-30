@@ -51,6 +51,8 @@ days:
   fs.writeFileSync(schedulePath, defaultSchedule);
   console.log('Created default schedule at:', schedulePath);
 }
+
+function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1400,
