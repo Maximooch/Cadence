@@ -17,11 +17,40 @@ if (!fs.existsSync(userDataPath)) {
 
 // Copy default schedule if user doesn't have one
 if (!fs.existsSync(schedulePath)) {
-  const defaultSchedule = fs.readFileSync(path.join(__dirname, 'schedule.yml'), 'utf8');
-  fs.writeFileSync(schedulePath, defaultSchedule);
-}
+  // Create default schedule
+  const defaultSchedule = `# Cadence Scheduler Configuration
+wake_time: 8.5   # 8:30am
+sleep_time: 23   # 11:00pm
 
-function createWindow() {
+default_tasks:
+  - id: 0
+    name: "Deep Work Block 1"
+    duration: 3
+    color: "#2563eb"
+  - id: 1
+    name: "Deep Work Block 2"
+    duration: 3
+    color: "#0891b2"
+  - id: 2
+    name: "Admin & Planning"
+    duration: 1
+    color: "#059669"
+
+days:
+  friday:
+    tasks:
+      - id: 0
+        name: "Weekly Review"
+        duration: 2
+        color: "#ea580c"
+      - id: 1
+        name: "Planning"
+        duration: 1
+        color: "#65a30d"
+`;
+  fs.writeFileSync(schedulePath, defaultSchedule);
+  console.log('Created default schedule at:', schedulePath);
+}
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1400,
