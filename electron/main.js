@@ -216,17 +216,5 @@ if (!gotTheLock) {
 app.on('before-quit', () => {
   isQuitting = true;
 });
-
-// macOS dock menu - set after app is ready
-app.whenReady().then(() => {
-  if (process.platform === 'darwin') {
-    app.dock.setMenu([
-      {
-        label: 'New Window',
-        click() {
-          createWindow();
-        }
-      }
-    ]);
   }
 });
