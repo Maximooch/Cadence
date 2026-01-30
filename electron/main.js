@@ -216,5 +216,3 @@ if (!gotTheLock) {
 app.on('before-quit', () => {
   isQuitting = true;
 });
-  }
-});
