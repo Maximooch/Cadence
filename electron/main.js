@@ -114,14 +114,16 @@ app.on('activate', function () {
   if (mainWindow === null) createWindow();
 });
 
-// macOS dock menu
-if (process.platform === 'darwin') {
-  app.dock.setMenu([
-    {
-      label: 'New Window',
-      click() {
-        createWindow();
+// macOS dock menu - set after app is ready
+app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.setMenu([
+      {
+        label: 'New Window',
+        click() {
+          createWindow();
+        }
       }
-    }
-  ]);
-}
+    ]);
+  }
+});
