@@ -3,3 +3,4 @@
 *.jsx
 !scheduler-1.jsx
 errors_log/
+dist/
